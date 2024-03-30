@@ -19,35 +19,53 @@ class _MyWebViewState extends State<MyWebView> {
   void initState() {
     widget.controller
       ..setNavigationDelegate(
-        NavigationDelegate(onPageStarted: (url) {
-          setState(() {
-            loadingPercentage = 0;
-          });
-        }, onProgress: (progress) {
-          setState(() {
-            loadingPercentage = progress;
-          });
-        }, onPageFinished: (url) {
-          setState(() {
-            loadingPercentage = 100;
-          });
-        },
-        onNavigationRequest: (NavigationRequest request) {
-            if (request.url.contains("tg:")) { // TELEGRAM
-          canLaunchUrl(
-                  Uri(scheme: 'tg', path: 'resolve?domain=YourId'))
-              .then((bool result) {
-            launchUrl(
-              Uri(scheme: 'tg', path: 'resolve?domain=NachMarket'),
-              mode: LaunchMode.externalApplication,
-            );
-          });
-          return NavigationDecision.prevent;
+        NavigationDelegate(
+          onPageStarted: (url) {
+            setState(() {
+              loadingPercentage = 0;
+            });
+          },
+          onProgress: (progress) {
+            setState(() {
+              loadingPercentage = progress;
+            });
+          },
+          onPageFinished: (url) {
+            setState(() {
+              loadingPercentage = 100;
+            });
+          },
+          onNavigationRequest: (NavigationRequest request) {
+            Uri uri = Uri.parse(request.url);
 
-        }
+            if (request.url.contains("tg:")) {
+              // TELEGRAM
+              canLaunchUrl(uri).then((bool result) {
+                launchUrl(
+                  uri,
+                  mode: LaunchMode.externalApplication,
+                );
+              });
+              return NavigationDecision.prevent;
+            } else if (request.url.contains("whatsapp:")) {
+              canLaunchUrl(uri).then((bool result) async {
+                launchUrl(uri, mode: LaunchMode.externalApplication);
+              });
+
+              return NavigationDecision.prevent;
+            } else if (request.url.contains("tel:")) {
+              canLaunchUrl(uri).then((bool result) {
+                launchUrl(
+                  uri,
+                  mode: LaunchMode.externalApplication,
+                );
+              });
+              return NavigationDecision.prevent;
+            }
+
             return NavigationDecision.navigate;
           },
-      ),
+        ),
       )
       ..setJavaScriptMode(JavaScriptMode.unrestricted)
       ..addJavaScriptChannel("SnackBar", onMessageReceived: (message) {
@@ -59,7 +77,6 @@ class _MyWebViewState extends State<MyWebView> {
     // TODO: implement initState
     super.initState();
   }
-
 
   Future<void> checkConnectivity() async {
     var connectivityResult = await (Connectivity().checkConnectivity());
@@ -74,7 +91,6 @@ class _MyWebViewState extends State<MyWebView> {
       children: [
         WebViewWidget(
           controller: widget.controller,
-          
         ),
         if (loadingPercentage < 100)
           LinearProgressIndicator(
